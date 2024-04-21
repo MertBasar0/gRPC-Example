@@ -1,0 +1,33 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "gRPCExample";
+
+package exampleRPCV1;
+
+service ExampleRPCServices{
+
+	rpc UnaryTrigger(emptyMessageForTrigger) returns (exampleTriggerResponse);
+	rpc UnaryMethod (exampleRequest) returns (exampleResponse);
+	rpc ServerStreamMethod (exampleRequest) returns (stream exampleTriggerResponse);
+	rpc ClientStreamMethod (stream exampleRequest) returns (exampleResponse);
+	rpc BidirectionalStreamingMethod (stream exampleRequest) returns (stream exampleResponse);
+}
+
+
+message emptyMessageForTrigger{
+}
+
+
+message exampleTriggerResponse{	
+	repeated string Photo = 1;
+}
+
+message exampleRequest{
+	string Name = 1;
+	string Surname = 2;
+}
+
+message exampleResponse{
+	string Name = 1;
+	string Surname = 2;
+}
