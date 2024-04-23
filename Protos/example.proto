@@ -10,7 +10,7 @@ service ExampleRPCServices{
 	rpc UnaryMethod (exampleRequest) returns (exampleResponse);
 	rpc ServerStreamMethod (exampleRequest) returns (stream exampleTriggerResponse);
 	rpc ClientStreamMethod (stream exampleRequest) returns (exampleResponse);
-	rpc BidirectionalStreamingMethod (stream exampleRequest) returns (stream exampleResponse);
+	rpc BidirectionalStreamingMethod (stream bidirectionalWayExampleRequest) returns (stream bidirectionalWayExampleResponse);
 }
 
 
@@ -30,4 +30,13 @@ message exampleRequest{
 message exampleResponse{
 	string Name = 1;
 	string Surname = 2;
+}
+
+message bidirectionalWayExampleRequest{
+	string clientSideImage = 1;
+	
+}
+
+message bidirectionalWayExampleResponse{
+	string manipulatedServerSideImage = 1;
 }

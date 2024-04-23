@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.62.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.6.0" />
+    <PackageReference Include="Magick.NET.Core" Version="13.6.0" />
   </ItemGroup>
 
 

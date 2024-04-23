@@ -1,13 +1,13 @@
-﻿using Google.Protobuf;
-using Google.Protobuf.Collections;
-using Grpc.Core;
+﻿using Grpc.Core;
+using ImageMagick;
+using System.Net;
+using static gRPCExample.ExampleRPCServices;
 
 namespace gRPCExample.Services
 {
-    public class ExampleService : gRPCExample.ExampleRPCServices.ExampleRPCServicesBase
+    public class ExampleService : ExampleRPCServicesBase
     {
         public string mockPhoto { get; set; } = string.Empty;
-        private int mockPhotoLenght { get; set; }
         public List<string> mockPhotoList { get; set; }
 
         public ExampleService()
@@ -15,21 +15,62 @@ namespace gRPCExample.Services
             mockPhotoList = new();
         }
 
-        //public override async Task<exampleResponse> UnaryMethod(exampleRequest request, ServerCallContext context)
-        //{
-        //     GeneratePhotoData();
-        //    return await Task.FromResult(new exampleResponse()
-        //    {
-        //        Name = request.Name,
-        //        Surname = request.Surname
-        //    });
-        //}
-
-        public override Task BidirectionalStreamingMethod(IAsyncStreamReader<exampleRequest> requestStream, IServerStreamWriter<exampleResponse> responseStream, ServerCallContext context)
+        static byte[] DownloadImage(string url)
         {
-            return base.BidirectionalStreamingMethod(requestStream, responseStream, context);
+            try
+            {
+                using (WebClient client = new())
+                {
+                    var image = client.DownloadData(new Uri(url));
+                    if(image != null)
+                    {
+                        return image;
+                    }
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw new Exception(ex.Message);
+            }
+
         }
 
+        public override async Task BidirectionalStreamingMethod(IAsyncStreamReader<bidirectionalWayExampleRequest> requestStream, IServerStreamWriter<bidirectionalWayExampleResponse> responseStream, ServerCallContext context)
+        {
+            try
+            {
+                List<bidirectionalWayExampleResponse> animalImage = new();
+                await foreach (var item in requestStream.ReadAllAsync())
+                {
+                    byte[] resimByte = DownloadImage(item.ClientSideImage);
+                    using (MemoryStream memoryStream = new(resimByte))
+                    {
+                        using (MagickImage magic = new(memoryStream))
+                        {
+                            magic.Blur(10, 20);
+                            animalImage.Add(new bidirectionalWayExampleResponse()
+                            {
+                                ManipulatedServerSideImage = magic.ToBase64()+ "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+                            });
+                        }
+                    }
+                    Console.WriteLine(item.ClientSideImage);
+                }
+
+                foreach (var item in animalImage)
+                {
+                    await responseStream.WriteAsync(item);
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+           
+        }
 
         public override async Task<exampleResponse> ClientStreamMethod(IAsyncStreamReader<exampleRequest> requestStream, ServerCallContext context)
         {
@@ -50,23 +91,11 @@ namespace gRPCExample.Services
                 for (int i = 0; i < 3000; i++)
                 {
                     var data = new exampleTriggerResponse();
-                    data.Photo.Add(generatedPhotoData + $"\n\n\n\n\n\n{i}");
+                    data.Photo.Add(generatedPhotoData);
                     await responseStream.WriteAsync(data);
                 }
 
             });
-
-            //var response = new exampleTriggerResponse();
-            //await Task.Run(() => response.Photo.AddRange(mockPhotoList));
-
-            //var s = response.CalculateSize();
-
-            //foreach (var photo in mockPhotoList)
-            //{
-            //    await responseStream.WriteAsync(response);
-
-            //}
-
         }
 
         public override async Task<exampleTriggerResponse> UnaryTrigger(emptyMessageForTrigger request, ServerCallContext context)
@@ -107,7 +136,6 @@ namespace gRPCExample.Services
             for (int i = 0; i < 30000; i++)
             {
                 result += mockPhoto;
-                mockPhotoLenght = result.Length;
             }
 
            return Task.FromResult(result);
